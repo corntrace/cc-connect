@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -477,6 +478,35 @@ func (m *ManagementServer) handleProjectAddPlatform(w http.ResponseWriter, r *ht
 	}
 	mgmtJSON(w, http.StatusCreated, map[string]any{
 		"message":          fmt.Sprintf("platform %q added to project %q", req.Type, projectName),
+		"restart_required": true,
+	})
+}
+
+func (m *ManagementServer) handleProjectPlatformRoutes(w http.ResponseWriter, r *http.Request, projectName, rest string) {
+	if r.Method != http.MethodDelete {
+		mgmtError(w, http.StatusMethodNotAllowed, "DELETE only")
+		return
+	}
+	if strings.TrimSpace(rest) == "" {
+		mgmtError(w, http.StatusBadRequest, "platform index required")
+		return
+	}
+	idxPart := strings.Split(strings.Trim(rest, "/"), "/")[0]
+	idx, err := strconv.Atoi(idxPart)
+	if err != nil || idx < 0 {
+		mgmtError(w, http.StatusBadRequest, "platform index must be >= 0")
+		return
+	}
+	if m.removePlatform == nil {
+		mgmtError(w, http.StatusServiceUnavailable, "config persistence not available")
+		return
+	}
+	if err := m.removePlatform(projectName, idx); err != nil {
+		mgmtError(w, http.StatusInternalServerError, "remove platform: "+err.Error())
+		return
+	}
+	mgmtJSON(w, http.StatusOK, map[string]any{
+		"message":          fmt.Sprintf("platform %d removed from project %q", idx, projectName),
 		"restart_required": true,
 	})
 }

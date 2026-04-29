@@ -6,7 +6,7 @@ import {
   Trash2, Plus, Check, Clock, ExternalLink, Link2,
 } from 'lucide-react';
 import { Card, Badge, Button, Input, Modal, EmptyState } from '@/components/ui';
-import { getProject, updateProject, deleteProject, listAgentTypes, type ProjectDetail as ProjectDetailType } from '@/api/projects';
+import { getProject, updateProject, deleteProject, deletePlatformFromProject, listAgentTypes, type ProjectDetail as ProjectDetailType, type PlatformConfigInfo } from '@/api/projects';
 import { listProviders, addProvider, removeProvider, activateProvider, type Provider, listGlobalProviders, type GlobalProvider, saveProviderRefs } from '@/api/providers';
 import { getHeartbeat, pauseHeartbeat, resumeHeartbeat, triggerHeartbeat, setHeartbeatInterval, type HeartbeatStatus } from '@/api/heartbeat';
 import { restartSystem } from '@/api/status';
@@ -76,6 +76,8 @@ export default function ProjectDetail() {
   // Add platform
   const [showAddPlatform, setShowAddPlatform] = useState(false);
   const [addPlatType, setAddPlatType] = useState('');
+  const [platformToDelete, setPlatformToDelete] = useState<PlatformConfigInfo | null>(null);
+  const [deletingPlatform, setDeletingPlatform] = useState(false);
   const [showRestartModal, setShowRestartModal] = useState(false);
 
   // Delete project
@@ -99,6 +101,24 @@ export default function ProjectDetail() {
       alert(e?.message || String(e));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDeletePlatform = async () => {
+    if (!name || !platformToDelete) return;
+    setDeletingPlatform(true);
+    try {
+      const res = await deletePlatformFromProject(name, platformToDelete.index);
+      setPlatformToDelete(null);
+      if (res.restart_required) {
+        setShowRestartModal(true);
+        return;
+      }
+      await fetchAll();
+    } catch (e: any) {
+      alert(e?.message || String(e));
+    } finally {
+      setDeletingPlatform(false);
     }
   };
 
@@ -264,13 +284,42 @@ export default function ProjectDetail() {
                 <Plus size={14} /> {t('setup.addPlatform', 'Add platform')}
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {project.platforms?.map((p) => (
-                <Badge key={p.type} variant={p.connected ? 'success' : 'danger'}>
-                  <Plug size={12} className="mr-1" /> {p.type} {p.connected ? '✓' : '✗'}
-                </Badge>
-              ))}
-            </div>
+            {(() => {
+              const connected = new Set(project.platforms?.filter(p => p.connected).map(p => p.type) || []);
+              const configs: PlatformConfigInfo[] = project.platform_configs?.length
+                ? project.platform_configs
+                : project.platforms?.map((p, idx) => ({ index: idx, type: p.type })) || [];
+              return (
+                <div className="space-y-2">
+                  {configs.map((pc) => (
+                    <div key={`${pc.index}-${pc.type}`} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={connected.has(pc.type) ? 'success' : 'danger'}>
+                            <Plug size={12} className="mr-1" /> {pc.type} {connected.has(pc.type) ? '✓' : '✗'}
+                          </Badge>
+                          <span className="text-xs text-gray-400">#{pc.index + 1}</span>
+                        </div>
+                        {pc.allow_chat && (
+                          <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+                            {t('fields.allowChat', 'Allowed chats')}: {pc.allow_chat}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="shrink-0 text-gray-400 hover:text-red-500"
+                        onClick={() => setPlatformToDelete(pc)}
+                        disabled={configs.length <= 1}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </Card>
           <Card>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('sessions.title')}</h3>
@@ -618,6 +667,21 @@ export default function ProjectDetail() {
             <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>{t('common.cancel')}</Button>
             <Button variant="danger" onClick={handleDeleteProject} disabled={deleting}>
               {deleting ? t('common.deleting', 'Deleting...') : t('common.delete')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete platform confirmation */}
+      <Modal open={!!platformToDelete} onClose={() => setPlatformToDelete(null)} title={t('projects.deletePlatformTitle', 'Delete platform')}>
+        <div className="space-y-4 py-2">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t('projects.deletePlatformConfirm', 'Remove {{type}} from this project? This requires a restart.', { type: platformToDelete?.type || '' })}
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setPlatformToDelete(null)}>{t('common.cancel')}</Button>
+            <Button variant="danger" onClick={handleDeletePlatform} disabled={deletingPlatform}>
+              {deletingPlatform ? t('common.deleting', 'Deleting...') : t('common.delete')}
             </Button>
           </div>
         </div>

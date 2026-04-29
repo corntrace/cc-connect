@@ -2370,6 +2370,32 @@ func TestAddPlatformToProject_NewProjectClonesAgentWhenAgentTypeEmpty(t *testing
 	}
 }
 
+func TestRemovePlatformFromProject_RemovesByIndex(t *testing.T) {
+	configPath := writeConfigFixture(t, feishuConfigFixture)
+	patchConfigPath(t, configPath)
+
+	if err := RemovePlatformFromProject("alpha", 1); err != nil {
+		t.Fatalf("RemovePlatformFromProject: %v", err)
+	}
+	cfg := readConfigFixture(t, configPath)
+	proj := cfg.Projects[0]
+	if len(proj.Platforms) != 2 {
+		t.Fatalf("len(platforms) = %d, want 2", len(proj.Platforms))
+	}
+	if proj.Platforms[0].Type != "telegram" || proj.Platforms[1].Type != "lark" {
+		t.Fatalf("platforms = %#v", proj.Platforms)
+	}
+}
+
+func TestRemovePlatformFromProject_RejectsLastPlatform(t *testing.T) {
+	configPath := writeConfigFixture(t, attachmentSendConfigFixture)
+	patchConfigPath(t, configPath)
+
+	if err := RemovePlatformFromProject("alpha", 0); err == nil {
+		t.Fatal("RemovePlatformFromProject error = nil, want last-platform rejection")
+	}
+}
+
 func TestFormatTOML(t *testing.T) {
 	tests := []struct {
 		name, input, want string

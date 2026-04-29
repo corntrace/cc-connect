@@ -867,6 +867,29 @@ func TestMgmt_AddPlatformToNewProject_DoesNotRequireEngine(t *testing.T) {
 	}
 }
 
+func TestMgmt_DeletePlatformDoesNotRequireEngine(t *testing.T) {
+	mgmt, ts, _ := testManagementServer(t, "tok")
+
+	var savedProject string
+	var savedIndex int
+	mgmt.SetRemovePlatform(func(proj string, idx int) error {
+		savedProject = proj
+		savedIndex = idx
+		return nil
+	})
+
+	r := mgmtDelete(t, ts.URL+"/api/v1/projects/brand-new-project/platforms/2", "tok")
+	if !r.OK {
+		t.Fatalf("delete platform failed: %s — should not require a running engine", r.Error)
+	}
+	if savedProject != "brand-new-project" {
+		t.Fatalf("saved project = %q, want brand-new-project", savedProject)
+	}
+	if savedIndex != 2 {
+		t.Fatalf("saved index = %d, want 2", savedIndex)
+	}
+}
+
 func TestMgmt_OtherRoutesStillRequireEngine(t *testing.T) {
 	_, ts, _ := testManagementServer(t, "tok")
 

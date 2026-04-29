@@ -49,6 +49,7 @@ type ManagementServer struct {
 	setupFeishuSave      func(req FeishuSetupSaveRequest) error
 	setupWeixinSave      func(req WeixinSetupSaveRequest) error
 	addPlatformToProject func(projectName, platType string, opts map[string]any, workDir, agentType string) error
+	removePlatform       func(projectName string, platformIndex int) error
 	removeProject        func(projectName string) error
 	saveProjectSettings  func(projectName string, update ProjectSettingsUpdate) error
 	getProjectConfig     func(projectName string) map[string]any
@@ -98,6 +99,10 @@ func (m *ManagementServer) SetSetupWeixinSave(fn func(WeixinSetupSaveRequest) er
 
 func (m *ManagementServer) SetAddPlatformToProject(fn func(string, string, map[string]any, string, string) error) {
 	m.addPlatformToProject = fn
+}
+
+func (m *ManagementServer) SetRemovePlatform(fn func(string, int) error) {
+	m.removePlatform = fn
 }
 
 func (m *ManagementServer) SetRemoveProject(fn func(string) error) {
@@ -597,6 +602,10 @@ func (m *ManagementServer) handleProjectRoutes(w http.ResponseWriter, r *http.Re
 	// and must work for brand-new projects that have no engine yet.
 	if sub == "add-platform" {
 		m.handleProjectAddPlatform(w, r, projName)
+		return
+	}
+	if sub == "platforms" {
+		m.handleProjectPlatformRoutes(w, r, projName, rest)
 		return
 	}
 

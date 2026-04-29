@@ -9,8 +9,10 @@ export interface ProjectSummary {
 }
 
 export interface PlatformConfigInfo {
+  index: number;
   type: string;
   allow_from?: string;
+  allow_chat?: string;
 }
 
 export interface ProjectDetail {
@@ -61,6 +63,9 @@ export const updateProject = (name: string, body: ProjectSettingsUpdate) => api.
 export const addPlatformToProject = (projectName: string, body: {
   type: string; options: Record<string, any>; work_dir?: string; agent_type?: string;
 }) => api.post<{ message: string; restart_required: boolean }>(`/projects/${projectName}/add-platform`, body);
+
+export const deletePlatformFromProject = (projectName: string, platformIndex: number) =>
+  api.delete<{ message: string; restart_required: boolean }>(`/projects/${projectName}/platforms/${platformIndex}`);
 
 export const deleteProject = (name: string) =>
   api.delete<{ message: string; restart_required: boolean }>(`/projects/${name}`);

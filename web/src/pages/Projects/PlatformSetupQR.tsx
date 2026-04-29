@@ -8,6 +8,7 @@ import {
   setupWeixinBegin, setupWeixinPoll, setupWeixinSave,
 } from '@/api/setup';
 import { restartSystem } from '@/api/status';
+import PlatformManualForm from './PlatformManualForm';
 
 type PlatformKind = 'feishu' | 'lark' | 'weixin';
 type Phase = 'idle' | 'loading' | 'scanning' | 'scanned' | 'completed' | 'expired' | 'denied' | 'error' | 'saving';
@@ -24,6 +25,7 @@ interface Props {
 export default function PlatformSetupQR({ platformType, projectName, workDir, agentType, onComplete, onCancel }: Props) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>('idle');
+  const [feishuMode, setFeishuMode] = useState<'qr' | 'bind'>('qr');
   const [qrUrl, setQrUrl] = useState('');
   const [error, setError] = useState('');
   const cancelledRef = useRef(false);
@@ -197,16 +199,50 @@ export default function PlatformSetupQR({ platformType, projectName, workDir, ag
 
   return (
     <div className="flex flex-col items-center gap-4 py-4">
+      {isFeishu && phase === 'idle' && (
+        <div className="w-full flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
+          <button
+            type="button"
+            onClick={() => setFeishuMode('qr')}
+            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${feishuMode === 'qr' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500'}`}
+          >
+            {t('setup.createByQR', 'Create by QR')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFeishuMode('bind')}
+            className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${feishuMode === 'bind' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500'}`}
+          >
+            {t('setup.bindExistingApp', 'Bind existing App')}
+          </button>
+        </div>
+      )}
+
+      {isFeishu && phase === 'idle' && feishuMode === 'bind' && (
+        <div className="w-full">
+          <PlatformManualForm
+            platformType={platformType}
+            projectName={projectName}
+            workDir={workDir}
+            agentType={agentType}
+            onComplete={onComplete}
+            onCancel={onCancel}
+          />
+        </div>
+      )}
+
       {phase === 'idle' && (
-        <>
-          <Smartphone size={48} className="text-gray-400" />
-          <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-            {t('setup.qrDescription', 'Scan a QR code with your phone to quickly connect {{platform}}.', { platform: platformLabel })}
-          </p>
-          <Button onClick={startFlow}>
-            {t('setup.startQR', 'Start QR Setup')}
-          </Button>
-        </>
+        feishuMode === 'bind' && isFeishu ? null : (
+          <>
+            <Smartphone size={48} className="text-gray-400" />
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              {t('setup.qrDescription', 'Scan a QR code with your phone to quickly connect {{platform}}.', { platform: platformLabel })}
+            </p>
+            <Button onClick={startFlow}>
+              {t('setup.startQR', 'Start QR Setup')}
+            </Button>
+          </>
+        )
       )}
 
       {phase === 'loading' && (

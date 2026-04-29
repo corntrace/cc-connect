@@ -2808,10 +2808,16 @@ func GetProjectConfigDetails(projectName string) map[string]any {
 		}
 		platConfigs := make([]map[string]any, len(p.Platforms))
 		for j, plat := range p.Platforms {
-			pc := map[string]any{"type": plat.Type}
+			pc := map[string]any{
+				"index": j,
+				"type":  plat.Type,
+			}
 			if plat.Options != nil {
 				if af, ok := plat.Options["allow_from"].(string); ok {
 					pc["allow_from"] = af
+				}
+				if ac, ok := plat.Options["allow_chat"].(string); ok {
+					pc["allow_chat"] = ac
 				}
 			}
 			platConfigs[j] = pc
@@ -2925,6 +2931,45 @@ func AddPlatformToProject(projectName string, platform PlatformConfig, workDir, 
 		Platforms: []PlatformConfig{platform},
 	})
 	return saveConfig(cfg)
+}
+
+// RemovePlatformFromProject removes one platform entry by zero-based index.
+// A project must keep at least one platform; delete the project instead when
+// the last platform should go away.
+func RemovePlatformFromProject(projectName string, platformIndex int) error {
+	configMu.Lock()
+	defer configMu.Unlock()
+	if ConfigPath == "" {
+		return fmt.Errorf("config path not set")
+	}
+	if strings.TrimSpace(projectName) == "" {
+		return fmt.Errorf("project name is required")
+	}
+	if platformIndex < 0 {
+		return fmt.Errorf("platform index must be >= 0")
+	}
+	data, err := os.ReadFile(ConfigPath)
+	if err != nil {
+		return fmt.Errorf("read config: %w", err)
+	}
+	cfg := &Config{}
+	if err := toml.Unmarshal(data, cfg); err != nil {
+		return fmt.Errorf("parse config: %w", err)
+	}
+	for i := range cfg.Projects {
+		if cfg.Projects[i].Name != projectName {
+			continue
+		}
+		if platformIndex >= len(cfg.Projects[i].Platforms) {
+			return fmt.Errorf("platform index %d out of range: project %q has %d platform(s)", platformIndex, projectName, len(cfg.Projects[i].Platforms))
+		}
+		if len(cfg.Projects[i].Platforms) <= 1 {
+			return fmt.Errorf("cannot remove the last platform from project %q; delete the project instead", projectName)
+		}
+		cfg.Projects[i].Platforms = append(cfg.Projects[i].Platforms[:platformIndex], cfg.Projects[i].Platforms[platformIndex+1:]...)
+		return saveConfig(cfg)
+	}
+	return fmt.Errorf("project %q not found", projectName)
 }
 
 func writeRawConfig(content string) error {
