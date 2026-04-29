@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, ChevronDown, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { addPlatformToProject } from '@/api/projects';
+import { addPlatformToProject, updatePlatformInProject } from '@/api/projects';
 import { platformMeta, type FieldDef } from '@/lib/platformMeta';
 import { cn } from '@/lib/utils';
 
@@ -11,15 +11,18 @@ interface Props {
   projectName: string;
   workDir?: string;
   agentType?: string;
+  platformIndex?: number;
+  initialValues?: Record<string, any>;
+  mode?: 'add' | 'edit';
   onComplete: () => void;
   onCancel: () => void;
 }
 
-export default function PlatformManualForm({ platformType, projectName, workDir, agentType, onComplete, onCancel }: Props) {
+export default function PlatformManualForm({ platformType, projectName, workDir, agentType, platformIndex, initialValues, mode = 'add', onComplete, onCancel }: Props) {
   const { t } = useTranslation();
   const meta = platformMeta[platformType];
-  const [values, setValues] = useState<Record<string, any>>({});
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [values, setValues] = useState<Record<string, any>>(initialValues || {});
+  const [showAdvanced, setShowAdvanced] = useState(mode === 'edit');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,7 +38,7 @@ export default function PlatformManualForm({ platformType, projectName, workDir,
   const advancedFields = meta.fields.filter(f => f.group === 'advanced');
 
   const handleSave = async () => {
-    const missing = meta.fields.filter(f => f.required && !values[f.key]);
+    const missing = meta.fields.filter(f => f.required && !values[f.key] && !(mode === 'edit' && f.type === 'password'));
     if (missing.length > 0) {
       setError(missing.map(f => t(f.labelKey)).join(', ') + ' required');
       return;
@@ -51,7 +54,11 @@ export default function PlatformManualForm({ platformType, projectName, workDir,
           opts[f.key] = v;
         }
       }
-      await addPlatformToProject(projectName, { type: platformType, options: opts, work_dir: workDir, agent_type: agentType });
+      if (mode === 'edit') {
+        await updatePlatformInProject(projectName, platformIndex!, { type: platformType, options: opts });
+      } else {
+        await addPlatformToProject(projectName, { type: platformType, options: opts, work_dir: workDir, agent_type: agentType });
+      }
       onComplete();
     } catch (e: any) {
       setError(e?.message || String(e));
@@ -94,7 +101,9 @@ export default function PlatformManualForm({ platformType, projectName, workDir,
 
       <div className="flex justify-between pt-2">
         <Button variant="secondary" size="sm" onClick={onCancel}>{t('common.back')}</Button>
-        <Button onClick={handleSave} loading={saving}>{t('setup.addPlatform', 'Add platform')}</Button>
+        <Button onClick={handleSave} loading={saving}>
+          {mode === 'edit' ? t('common.save') : t('setup.addPlatform', 'Add platform')}
+        </Button>
       </div>
     </div>
   );
@@ -115,7 +124,7 @@ function FieldInput({ field, value, onChange, t }: { field: FieldDef; value: any
           className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
         />
         <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
-        {hint && <span className="text-[11px] text-gray-400">({hint})</span>}
+        {hint && <span className="text-[11px] text-gray-400">{hint}</span>}
       </label>
     );
   }

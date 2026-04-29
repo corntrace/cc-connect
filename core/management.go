@@ -49,6 +49,7 @@ type ManagementServer struct {
 	setupFeishuSave      func(req FeishuSetupSaveRequest) error
 	setupWeixinSave      func(req WeixinSetupSaveRequest) error
 	addPlatformToProject func(projectName, platType string, opts map[string]any, workDir, agentType string) error
+	updatePlatform       func(projectName string, platformIndex int, platType string, opts map[string]any) error
 	removePlatform       func(projectName string, platformIndex int) error
 	removeProject        func(projectName string) error
 	saveProjectSettings  func(projectName string, update ProjectSettingsUpdate) error
@@ -99,6 +100,10 @@ func (m *ManagementServer) SetSetupWeixinSave(fn func(WeixinSetupSaveRequest) er
 
 func (m *ManagementServer) SetAddPlatformToProject(fn func(string, string, map[string]any, string, string) error) {
 	m.addPlatformToProject = fn
+}
+
+func (m *ManagementServer) SetUpdatePlatform(fn func(string, int, string, map[string]any) error) {
+	m.updatePlatform = fn
 }
 
 func (m *ManagementServer) SetRemovePlatform(fn func(string, int) error) {

@@ -890,6 +890,36 @@ func TestMgmt_DeletePlatformDoesNotRequireEngine(t *testing.T) {
 	}
 }
 
+func TestMgmt_UpdatePlatformDoesNotRequireEngine(t *testing.T) {
+	mgmt, ts, _ := testManagementServer(t, "tok")
+
+	var savedProject, savedType string
+	var savedIndex int
+	mgmt.SetUpdatePlatform(func(proj string, idx int, platType string, opts map[string]any) error {
+		savedProject = proj
+		savedIndex = idx
+		savedType = platType
+		return nil
+	})
+
+	r := mgmtPatch(t, ts.URL+"/api/v1/projects/brand-new-project/platforms/2", "tok", map[string]any{
+		"type":    "feishu",
+		"options": map[string]any{"app_id": "cli_x", "allow_chat": "oc_x"},
+	})
+	if !r.OK {
+		t.Fatalf("update platform failed: %s — should not require a running engine", r.Error)
+	}
+	if savedProject != "brand-new-project" {
+		t.Fatalf("saved project = %q, want brand-new-project", savedProject)
+	}
+	if savedIndex != 2 {
+		t.Fatalf("saved index = %d, want 2", savedIndex)
+	}
+	if savedType != "feishu" {
+		t.Fatalf("saved type = %q, want feishu", savedType)
+	}
+}
+
 func TestMgmt_OtherRoutesStillRequireEngine(t *testing.T) {
 	_, ts, _ := testManagementServer(t, "tok")
 

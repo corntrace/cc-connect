@@ -871,6 +871,12 @@ func main() {
 			}
 			return config.AddPlatformToProject(projectName, config.PlatformConfig{Type: platType, Options: opts}, workDir, agentType)
 		})
+		mgmtSrv.SetUpdatePlatform(func(projectName string, platformIndex int, platType string, opts map[string]any) error {
+			if opts == nil {
+				opts = map[string]any{}
+			}
+			return config.UpdatePlatformInProject(projectName, platformIndex, config.PlatformConfig{Type: platType, Options: opts})
+		})
 		mgmtSrv.SetRemovePlatform(config.RemovePlatformFromProject)
 		mgmtSrv.SetRemoveProject(config.RemoveProject)
 		mgmtSrv.SetSaveProjectSettings(func(name string, u core.ProjectSettingsUpdate) error {

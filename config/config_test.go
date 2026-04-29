@@ -2387,6 +2387,33 @@ func TestRemovePlatformFromProject_RemovesByIndex(t *testing.T) {
 	}
 }
 
+func TestUpdatePlatformInProject_PreservesOmittedSecret(t *testing.T) {
+	configPath := writeConfigFixture(t, feishuConfigFixture)
+	patchConfigPath(t, configPath)
+
+	err := UpdatePlatformInProject("alpha", 1, PlatformConfig{
+		Type: "feishu",
+		Options: map[string]any{
+			"app_id":     "new_app",
+			"allow_chat": "oc_new",
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdatePlatformInProject: %v", err)
+	}
+	cfg := readConfigFixture(t, configPath)
+	plat := cfg.Projects[0].Platforms[1]
+	if stringMapValue(plat.Options, "app_id") != "new_app" {
+		t.Fatalf("app_id = %q, want new_app", stringMapValue(plat.Options, "app_id"))
+	}
+	if stringMapValue(plat.Options, "app_secret") != "old_feishu_secret" {
+		t.Fatalf("app_secret = %q, want preserved old secret", stringMapValue(plat.Options, "app_secret"))
+	}
+	if stringMapValue(plat.Options, "allow_chat") != "oc_new" {
+		t.Fatalf("allow_chat = %q, want oc_new", stringMapValue(plat.Options, "allow_chat"))
+	}
+}
+
 func TestRemovePlatformFromProject_RejectsLastPlatform(t *testing.T) {
 	configPath := writeConfigFixture(t, attachmentSendConfigFixture)
 	patchConfigPath(t, configPath)

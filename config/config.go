@@ -2819,6 +2819,14 @@ func GetProjectConfigDetails(projectName string) map[string]any {
 				if ac, ok := plat.Options["allow_chat"].(string); ok {
 					pc["allow_chat"] = ac
 				}
+				opts := make(map[string]any, len(plat.Options))
+				for k, v := range plat.Options {
+					if strings.Contains(strings.ToLower(k), "secret") || strings.Contains(strings.ToLower(k), "token") || strings.Contains(strings.ToLower(k), "key") {
+						continue
+					}
+					opts[k] = v
+				}
+				pc["options"] = opts
 			}
 			platConfigs[j] = pc
 		}
@@ -2931,6 +2939,57 @@ func AddPlatformToProject(projectName string, platform PlatformConfig, workDir, 
 		Platforms: []PlatformConfig{platform},
 	})
 	return saveConfig(cfg)
+}
+
+// UpdatePlatformInProject replaces one platform entry by zero-based index.
+func UpdatePlatformInProject(projectName string, platformIndex int, platform PlatformConfig) error {
+	configMu.Lock()
+	defer configMu.Unlock()
+	if ConfigPath == "" {
+		return fmt.Errorf("config path not set")
+	}
+	if strings.TrimSpace(projectName) == "" {
+		return fmt.Errorf("project name is required")
+	}
+	if platformIndex < 0 {
+		return fmt.Errorf("platform index must be >= 0")
+	}
+	if strings.TrimSpace(platform.Type) == "" {
+		return fmt.Errorf("platform type is required")
+	}
+	if platform.Options == nil {
+		platform.Options = map[string]any{}
+	}
+	data, err := os.ReadFile(ConfigPath)
+	if err != nil {
+		return fmt.Errorf("read config: %w", err)
+	}
+	cfg := &Config{}
+	if err := toml.Unmarshal(data, cfg); err != nil {
+		return fmt.Errorf("parse config: %w", err)
+	}
+	for i := range cfg.Projects {
+		if cfg.Projects[i].Name != projectName {
+			continue
+		}
+		if platformIndex >= len(cfg.Projects[i].Platforms) {
+			return fmt.Errorf("platform index %d out of range: project %q has %d platform(s)", platformIndex, projectName, len(cfg.Projects[i].Platforms))
+		}
+		existing := cfg.Projects[i].Platforms[platformIndex]
+		if existing.Options != nil {
+			for k, v := range existing.Options {
+				if _, ok := platform.Options[k]; ok {
+					continue
+				}
+				if strings.Contains(strings.ToLower(k), "secret") || strings.Contains(strings.ToLower(k), "token") || strings.Contains(strings.ToLower(k), "key") {
+					platform.Options[k] = v
+				}
+			}
+		}
+		cfg.Projects[i].Platforms[platformIndex] = platform
+		return saveConfig(cfg)
+	}
+	return fmt.Errorf("project %q not found", projectName)
 }
 
 // RemovePlatformFromProject removes one platform entry by zero-based index.

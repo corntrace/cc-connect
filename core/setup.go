@@ -454,6 +454,11 @@ type AddPlatformRequest struct {
 	AgentType string         `json:"agent_type"`
 }
 
+type UpdatePlatformRequest struct {
+	Type    string         `json:"type"`
+	Options map[string]any `json:"options"`
+}
+
 func (m *ManagementServer) handleProjectAddPlatform(w http.ResponseWriter, r *http.Request, projectName string) {
 	if r.Method != http.MethodPost {
 		mgmtError(w, http.StatusMethodNotAllowed, "POST only")
@@ -483,10 +488,6 @@ func (m *ManagementServer) handleProjectAddPlatform(w http.ResponseWriter, r *ht
 }
 
 func (m *ManagementServer) handleProjectPlatformRoutes(w http.ResponseWriter, r *http.Request, projectName, rest string) {
-	if r.Method != http.MethodDelete {
-		mgmtError(w, http.StatusMethodNotAllowed, "DELETE only")
-		return
-	}
 	if strings.TrimSpace(rest) == "" {
 		mgmtError(w, http.StatusBadRequest, "platform index required")
 		return
@@ -495,6 +496,36 @@ func (m *ManagementServer) handleProjectPlatformRoutes(w http.ResponseWriter, r 
 	idx, err := strconv.Atoi(idxPart)
 	if err != nil || idx < 0 {
 		mgmtError(w, http.StatusBadRequest, "platform index must be >= 0")
+		return
+	}
+
+	if r.Method == http.MethodPatch {
+		var req UpdatePlatformRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			mgmtError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+			return
+		}
+		if req.Type == "" {
+			mgmtError(w, http.StatusBadRequest, "type is required")
+			return
+		}
+		if m.updatePlatform == nil {
+			mgmtError(w, http.StatusServiceUnavailable, "config persistence not available")
+			return
+		}
+		if err := m.updatePlatform(projectName, idx, req.Type, req.Options); err != nil {
+			mgmtError(w, http.StatusInternalServerError, "update platform: "+err.Error())
+			return
+		}
+		mgmtJSON(w, http.StatusOK, map[string]any{
+			"message":          fmt.Sprintf("platform %d updated for project %q", idx, projectName),
+			"restart_required": true,
+		})
+		return
+	}
+
+	if r.Method != http.MethodDelete {
+		mgmtError(w, http.StatusMethodNotAllowed, "PATCH or DELETE only")
 		return
 	}
 	if m.removePlatform == nil {

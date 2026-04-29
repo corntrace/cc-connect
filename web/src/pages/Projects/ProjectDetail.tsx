@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Plug, Heart, Settings, Layers, Zap, Pause, Play,
-  Trash2, Plus, Check, Clock, ExternalLink, Link2,
+  Trash2, Plus, Check, Clock, ExternalLink, Link2, Pencil,
 } from 'lucide-react';
 import { Card, Badge, Button, Input, Modal, EmptyState } from '@/components/ui';
 import { getProject, updateProject, deleteProject, deletePlatformFromProject, listAgentTypes, type ProjectDetail as ProjectDetailType, type PlatformConfigInfo } from '@/api/projects';
@@ -76,6 +76,7 @@ export default function ProjectDetail() {
   // Add platform
   const [showAddPlatform, setShowAddPlatform] = useState(false);
   const [addPlatType, setAddPlatType] = useState('');
+  const [platformToEdit, setPlatformToEdit] = useState<PlatformConfigInfo | null>(null);
   const [platformToDelete, setPlatformToDelete] = useState<PlatformConfigInfo | null>(null);
   const [deletingPlatform, setDeletingPlatform] = useState(false);
   const [showRestartModal, setShowRestartModal] = useState(false);
@@ -306,15 +307,27 @@ export default function ProjectDetail() {
                           </p>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="shrink-0 text-gray-400 hover:text-red-500"
-                        onClick={() => setPlatformToDelete(pc)}
-                        disabled={configs.length <= 1}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {platformMeta[pc.type] && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-accent"
+                            onClick={() => setPlatformToEdit(pc)}
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-gray-400 hover:text-red-500"
+                          onClick={() => setPlatformToDelete(pc)}
+                          disabled={configs.length <= 1}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -670,6 +683,24 @@ export default function ProjectDetail() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Edit platform */}
+      <Modal open={!!platformToEdit} onClose={() => setPlatformToEdit(null)} title={t('projects.editPlatformTitle', 'Edit platform')}>
+        {platformToEdit && (
+          <PlatformManualForm
+            mode="edit"
+            platformType={platformToEdit.type}
+            projectName={name!}
+            platformIndex={platformToEdit.index}
+            initialValues={platformToEdit.options || {}}
+            onComplete={() => {
+              setPlatformToEdit(null);
+              setShowRestartModal(true);
+            }}
+            onCancel={() => setPlatformToEdit(null)}
+          />
+        )}
       </Modal>
 
       {/* Delete platform confirmation */}
