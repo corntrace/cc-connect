@@ -392,8 +392,20 @@ func (m *ManagementServer) handleAgents(w http.ResponseWriter, r *http.Request) 
 		mgmtError(w, http.StatusMethodNotAllowed, "GET only")
 		return
 	}
+	type agentInfo struct {
+		Name  string               `json:"name"`
+		Modes []PermissionModeInfo `json:"modes,omitempty"`
+	}
+	agents := make([]agentInfo, 0, len(agentFactories))
+	for _, name := range ListRegisteredAgents() {
+		info := agentInfo{Name: name}
+		if modes := GetAgentModes(name); modes != nil {
+			info.Modes = modes
+		}
+		agents = append(agents, info)
+	}
 	mgmtJSON(w, http.StatusOK, map[string]any{
-		"agents":    ListRegisteredAgents(),
+		"agents":    agents,
 		"platforms": ListRegisteredPlatforms(),
 	})
 }

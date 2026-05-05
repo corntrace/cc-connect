@@ -55,7 +55,20 @@ export interface ProjectSettingsUpdate {
   platform_allow_from?: Record<string, string>;
 }
 
-export const listAgentTypes = () => api.get<{ agents: string[]; platforms: string[] }>('/agents');
+export interface AgentModeInfo {
+  key: string;
+  name: string;
+  name_zh: string;
+  desc: string;
+  desc_zh: string;
+}
+
+export interface AgentTypeInfo {
+  name: string;
+  modes?: AgentModeInfo[];
+}
+
+export const listAgentTypes = () => api.get<{ agents: AgentTypeInfo[]; platforms: string[] }>('/agents');
 
 export const listProjects = () => api.get<{ projects: ProjectSummary[] }>('/projects');
 export const getProject = (name: string) => api.get<ProjectDetail>(`/projects/${name}`);

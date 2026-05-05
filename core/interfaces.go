@@ -467,11 +467,11 @@ type LiveModeSwitcher interface {
 
 // PermissionModeInfo describes a permission mode for display.
 type PermissionModeInfo struct {
-	Key    string
-	Name   string
-	NameZh string
-	Desc   string
-	DescZh string
+	Key    string `json:"key"`
+	Name   string `json:"name"`
+	NameZh string `json:"name_zh"`
+	Desc   string `json:"desc"`
+	DescZh string `json:"desc_zh"`
 }
 
 // BotCommandInfo represents a command for bot menu registration (e.g. Telegram setMyCommands).

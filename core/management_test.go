@@ -991,11 +991,21 @@ func TestMgmt_Agents(t *testing.T) {
 		t.Fatalf("agents failed: %s", r.Error)
 	}
 	var data struct {
-		Agents    []string `json:"agents"`
+		Agents    []struct {
+			Name  string               `json:"name"`
+			Modes []PermissionModeInfo `json:"modes"`
+		} `json:"agents"`
 		Platforms []string `json:"platforms"`
 	}
 	if err := json.Unmarshal(r.Data, &data); err != nil {
 		t.Fatalf("unmarshal agents: %v", err)
+	}
+	// Agents list may be empty in test env (no agent packages imported),
+	// but the response shape must be an array of objects, not strings.
+	for _, a := range data.Agents {
+		if a.Name == "" {
+			t.Fatal("agent name should not be empty")
+		}
 	}
 }
 

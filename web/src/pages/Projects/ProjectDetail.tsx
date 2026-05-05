@@ -6,7 +6,7 @@ import {
   Trash2, Plus, Check, Clock, ExternalLink, Link2, Pencil,
 } from 'lucide-react';
 import { Card, Badge, Button, Input, Modal, EmptyState } from '@/components/ui';
-import { getProject, updateProject, deleteProject, deletePlatformFromProject, listAgentTypes, type ProjectDetail as ProjectDetailType, type PlatformConfigInfo } from '@/api/projects';
+import { getProject, updateProject, deleteProject, deletePlatformFromProject, listAgentTypes, type ProjectDetail as ProjectDetailType, type PlatformConfigInfo, type AgentTypeInfo } from '@/api/projects';
 import { listProviders, addProvider, removeProvider, activateProvider, type Provider, listGlobalProviders, type GlobalProvider, saveProviderRefs } from '@/api/providers';
 import { getHeartbeat, pauseHeartbeat, resumeHeartbeat, triggerHeartbeat, setHeartbeatInterval, type HeartbeatStatus } from '@/api/heartbeat';
 import { restartSystem } from '@/api/status';
@@ -56,7 +56,7 @@ export default function ProjectDetail() {
   const [saving, setSaving] = useState(false);
 
   // Agent type
-  const [agentTypes, setAgentTypes] = useState<string[]>([]);
+  const [agentTypes, setAgentTypes] = useState<AgentTypeInfo[]>([]);
   const [selectedAgentType, setSelectedAgentType] = useState('');
 
   // Global providers & refs
@@ -178,7 +178,7 @@ export default function ProjectDetail() {
         setGlobalProviders(gp.value.providers || []);
       }
       if (at.status === 'fulfilled') {
-        setAgentTypes((at.value.agents || []).sort());
+        setAgentTypes((at.value.agents || []).sort((a, b) => a.name.localeCompare(b.name)));
       }
     } finally {
       setLoading(false);
@@ -556,11 +556,16 @@ export default function ProjectDetail() {
               </label>
               <select
                 value={selectedAgentType}
-                onChange={(e) => setSelectedAgentType(e.target.value)}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  setSelectedAgentType(newType);
+                  const info = agentTypes.find(a => a.name === newType);
+                  setAgentMode(info?.modes?.[0]?.key || 'default');
+                }}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent/50"
               >
-                {agentTypes.map(a => <option key={a} value={a}>{a}</option>)}
-                {selectedAgentType && !agentTypes.includes(selectedAgentType) && (
+                {agentTypes.map(a => <option key={a.name} value={a.name}>{a.name}</option>)}
+                {selectedAgentType && !agentTypes.find(a => a.name === selectedAgentType) && (
                   <option value={selectedAgentType}>{selectedAgentType}</option>
                 )}
               </select>
@@ -578,11 +583,15 @@ export default function ProjectDetail() {
                 onChange={(e) => setAgentMode(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent/50"
               >
-                <option value="default">default</option>
-                <option value="acceptEdits">acceptEdits (edit)</option>
-                <option value="plan">plan</option>
-                <option value="bypassPermissions">bypassPermissions (yolo)</option>
-                <option value="dontAsk">dontAsk</option>
+                {(() => {
+                  const modes = agentTypes.find(a => a.name === selectedAgentType)?.modes;
+                  if (modes && modes.length > 0) {
+                    return modes.map(m => (
+                      <option key={m.key} value={m.key}>{m.name} — {m.desc}</option>
+                    ));
+                  }
+                  return <option value="default">default</option>;
+                })()}
               </select>
             </div>
           </div>

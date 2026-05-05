@@ -11,7 +11,16 @@ type AgentFactory func(opts map[string]any) (Agent, error)
 var (
 	platformFactories = make(map[string]PlatformFactory)
 	agentFactories    = make(map[string]AgentFactory)
+	agentModes        = make(map[string][]PermissionModeInfo)
 )
+
+func RegisterAgentModes(name string, modes []PermissionModeInfo) {
+	agentModes[name] = modes
+}
+
+func GetAgentModes(name string) []PermissionModeInfo {
+	return agentModes[name]
+}
 
 func RegisterPlatform(name string, factory PlatformFactory) {
 	platformFactories[name] = factory
