@@ -18,6 +18,7 @@ import (
 // ProjectSettingsUpdate is passed to SetSaveProjectSettings to persist management API PATCH fields.
 // The implementation (typically in cmd/cc-connect) maps this to config.ProjectSettingsUpdate.
 type ProjectSettingsUpdate struct {
+	NewName              *string
 	Language             *string
 	AdminFrom            *string
 	DisabledCommands     []string
@@ -151,10 +152,10 @@ type GlobalProviderInfo struct {
 		Model string `json:"model"`
 		Alias string `json:"alias,omitempty"`
 	} `json:"models,omitempty"`
-	Endpoints       map[string]string              `json:"endpoints,omitempty"`
-	AgentModels     map[string]string              `json:"agent_models,omitempty"`
-	AgentModelLists map[string][]GlobalModelEntry   `json:"agent_model_lists,omitempty"`
-	Codex           *GlobalCodexConfig              `json:"codex,omitempty"`
+	Endpoints       map[string]string             `json:"endpoints,omitempty"`
+	AgentModels     map[string]string             `json:"agent_models,omitempty"`
+	AgentModelLists map[string][]GlobalModelEntry `json:"agent_model_lists,omitempty"`
+	Codex           *GlobalCodexConfig            `json:"codex,omitempty"`
 }
 
 // GlobalModelEntry is a model entry inside AgentModelLists.
@@ -732,6 +733,7 @@ func (m *ManagementServer) handleProjectDetail(w http.ResponseWriter, r *http.Re
 
 	if r.Method == http.MethodPatch {
 		var body struct {
+			Name                 *string           `json:"name"`
 			Language             *string           `json:"language"`
 			AdminFrom            *string           `json:"admin_from"`
 			DisabledCommands     []string          `json:"disabled_commands"`
@@ -789,6 +791,27 @@ func (m *ManagementServer) handleProjectDetail(w http.ResponseWriter, r *http.Re
 		}
 
 		restartRequired := false
+		if body.Name != nil {
+			newName := strings.TrimSpace(*body.Name)
+			if newName == "" {
+				mgmtError(w, http.StatusBadRequest, "project name is required")
+				return
+			}
+			if strings.Contains(newName, "/") {
+				mgmtError(w, http.StatusBadRequest, "project name must not contain '/'")
+				return
+			}
+			if newName != name {
+				m.mu.RLock()
+				_, exists := m.engines[newName]
+				m.mu.RUnlock()
+				if exists {
+					mgmtError(w, http.StatusBadRequest, fmt.Sprintf("project %q already exists", newName))
+					return
+				}
+				restartRequired = true
+			}
+		}
 		if body.AgentType != nil && *body.AgentType != e.agent.Name() {
 			registered := ListRegisteredAgents()
 			found := false
@@ -807,6 +830,7 @@ func (m *ManagementServer) handleProjectDetail(w http.ResponseWriter, r *http.Re
 
 		if m.saveProjectSettings != nil {
 			patch := ProjectSettingsUpdate{
+				NewName:              body.Name,
 				Language:             body.Language,
 				AdminFrom:            body.AdminFrom,
 				DisabledCommands:     body.DisabledCommands,
@@ -820,6 +844,19 @@ func (m *ManagementServer) handleProjectDetail(w http.ResponseWriter, r *http.Re
 			}
 			if err := m.saveProjectSettings(name, patch); err != nil {
 				slog.Warn("management: failed to persist project settings", "project", name, "error", err)
+				if body.Name != nil {
+					mgmtError(w, http.StatusInternalServerError, err.Error())
+					return
+				}
+			}
+		} else if body.Name != nil {
+			mgmtError(w, http.StatusNotImplemented, "project settings persistence not configured")
+			return
+		}
+
+		if body.Name != nil && strings.TrimSpace(*body.Name) != name {
+			if restartRequired {
+				slog.Info("management: project rename persisted; restart required", "old_project", name, "new_project", strings.TrimSpace(*body.Name))
 			}
 		}
 
@@ -1885,10 +1922,10 @@ func (m *ManagementServer) handleCCSwitchProviders(w http.ResponseWriter, r *htt
 // applying per-agent-type overrides for base_url, model, and models.
 func resolveGlobalProviderForAgent(g GlobalProviderInfo, agentType string) ProviderConfig {
 	pc := ProviderConfig{
-		Name:   g.Name,
-		APIKey: g.APIKey,
+		Name:    g.Name,
+		APIKey:  g.APIKey,
 		BaseURL: g.BaseURL,
-		Model:  g.Model,
+		Model:   g.Model,
 	}
 	if ep, ok := g.Endpoints[agentType]; ok && ep != "" {
 		pc.BaseURL = ep

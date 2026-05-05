@@ -2308,6 +2308,21 @@ func TestSaveProjectSettings_ExtraFields(t *testing.T) {
 	}
 }
 
+func TestSaveProjectSettings_RenameProject(t *testing.T) {
+	configPath := writeConfigFixture(t, feishuConfigFixture)
+	patchConfigPath(t, configPath)
+
+	newName := "renamed-alpha"
+	if err := SaveProjectSettings("alpha", ProjectSettingsUpdate{NewName: &newName}); err != nil {
+		t.Fatalf("SaveProjectSettings rename: %v", err)
+	}
+
+	cfg := readConfigFixture(t, configPath)
+	if got := cfg.Projects[0].Name; got != newName {
+		t.Fatalf("project name = %q, want %q", got, newName)
+	}
+}
+
 func TestGetProjectConfigDetails(t *testing.T) {
 	configPath := writeConfigFixture(t, feishuConfigFixture)
 	patchConfigPath(t, configPath)

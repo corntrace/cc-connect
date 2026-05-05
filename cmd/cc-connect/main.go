@@ -881,6 +881,7 @@ func main() {
 		mgmtSrv.SetRemoveProject(config.RemoveProject)
 		mgmtSrv.SetSaveProjectSettings(func(name string, u core.ProjectSettingsUpdate) error {
 			return config.SaveProjectSettings(name, config.ProjectSettingsUpdate{
+				NewName:              u.NewName,
 				Language:             u.Language,
 				AdminFrom:            u.AdminFrom,
 				DisabledCommands:     u.DisabledCommands,

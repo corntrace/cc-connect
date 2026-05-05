@@ -44,6 +44,7 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true);
 
   // Settings form
+  const [editableProjectName, setEditableProjectName] = useState('');
   const [language, setLanguage] = useState('');
   const [adminFrom, setAdminFrom] = useState('');
   const [disabledCmds, setDisabledCmds] = useState('');
@@ -80,6 +81,7 @@ export default function ProjectDetail() {
   const [platformToDelete, setPlatformToDelete] = useState<PlatformConfigInfo | null>(null);
   const [deletingPlatform, setDeletingPlatform] = useState(false);
   const [showRestartModal, setShowRestartModal] = useState(false);
+  const [restartProjectName, setRestartProjectName] = useState('');
 
   // Delete project
   const navigate = useNavigate();
@@ -112,6 +114,7 @@ export default function ProjectDetail() {
       const res = await deletePlatformFromProject(name, platformToDelete.index);
       setPlatformToDelete(null);
       if (res.restart_required) {
+        setRestartProjectName('');
         setShowRestartModal(true);
         return;
       }
@@ -150,6 +153,7 @@ export default function ProjectDetail() {
       ]);
       if (proj.status === 'fulfilled') {
         setProject(proj.value);
+        setEditableProjectName(proj.value.name || name);
         setLanguage(proj.value.settings?.language || '');
         setAdminFrom(proj.value.settings?.admin_from || '');
         setDisabledCmds(proj.value.settings?.disabled_commands?.join(', ') || '');
@@ -197,7 +201,14 @@ export default function ProjectDetail() {
     setSaving(true);
     try {
       const agentTypeChanged = project && selectedAgentType !== project.agent_type;
+      const trimmedProjectName = editableProjectName.trim();
+      if (!trimmedProjectName) {
+        alert(t('projects.projectNameRequired', 'Project name is required'));
+        return;
+      }
+      const projectNameChanged = project && trimmedProjectName !== project.name;
       const res = await updateProject(name, {
+        ...(projectNameChanged ? { name: trimmedProjectName } : {}),
         language,
         admin_from: adminFrom,
         disabled_commands: disabledCmds.split(',').map(s => s.trim()).filter(Boolean),
@@ -210,10 +221,13 @@ export default function ProjectDetail() {
         platform_allow_from: platformAllowFrom,
       });
       if (res && (res as any).restart_required) {
+        setRestartProjectName(projectNameChanged ? trimmedProjectName : '');
         setShowRestartModal(true);
         return;
       }
       await fetchAll();
+    } catch (e: any) {
+      alert(e?.message || String(e));
     } finally {
       setSaving(false);
     }
@@ -252,7 +266,7 @@ export default function ProjectDetail() {
         <Link to="/projects" className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
           <ArrowLeft size={18} className="text-gray-400" />
         </Link>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{name}</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{project?.name || name}</h2>
         {project && <Badge variant="info">{project.agent_type}</Badge>}
       </div>
 
@@ -546,6 +560,24 @@ export default function ProjectDetail() {
 
       {tab === 'settings' && project && (
         <div className="space-y-4">
+        {/* Project identity */}
+        <Card>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t('projects.projectIdentity', 'Project')}</h3>
+          <div className="space-y-2 max-w-lg">
+            <Input
+              label={t('projects.name')}
+              value={editableProjectName}
+              onChange={(e) => setEditableProjectName(e.target.value.replace(/\//g, ''))}
+              placeholder="my-project"
+            />
+            {project && editableProjectName.trim() !== project.name && (
+              <p className="text-[11px] text-amber-500">
+                {t('projects.projectNameChangeHint', 'Changing project name updates config.toml and requires restart.')}
+              </p>
+            )}
+          </div>
+        </Card>
+
         {/* Agent settings */}
         <Card>
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t('projects.agentSettings', 'Agent')}</h3>
@@ -705,6 +737,7 @@ export default function ProjectDetail() {
             initialValues={platformToEdit.options || {}}
             onComplete={() => {
               setPlatformToEdit(null);
+              setRestartProjectName('');
               setShowRestartModal(true);
             }}
             onCancel={() => setPlatformToEdit(null)}
@@ -760,6 +793,7 @@ export default function ProjectDetail() {
             projectName={name!}
             onComplete={() => {
               setShowAddPlatform(false);
+              setRestartProjectName('');
               setShowRestartModal(true);
             }}
             onCancel={() => setAddPlatType('')}
@@ -770,6 +804,7 @@ export default function ProjectDetail() {
             projectName={name!}
             onComplete={() => {
               setShowAddPlatform(false);
+              setRestartProjectName('');
               setShowRestartModal(true);
             }}
             onCancel={() => setAddPlatType('')}
@@ -791,10 +826,26 @@ export default function ProjectDetail() {
             {t('setup.restartHint', 'Restart the service for the new platform to take effect.')}
           </p>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => { setShowRestartModal(false); setTimeout(fetchAll, 300); }}>
+            <Button variant="secondary" onClick={() => {
+              const renamedTo = restartProjectName;
+              setShowRestartModal(false);
+              if (!renamedTo) {
+                setTimeout(fetchAll, 300);
+              }
+            }}>
               {t('setup.later', 'Later')}
             </Button>
-            <Button onClick={async () => { await restartSystem(); setShowRestartModal(false); await waitForService(8000); await fetchAll(); }}>
+            <Button onClick={async () => {
+              const renamedTo = restartProjectName;
+              await restartSystem();
+              setShowRestartModal(false);
+              await waitForService(8000);
+              if (renamedTo) {
+                navigate(`/projects/${encodeURIComponent(renamedTo)}`);
+              } else {
+                await fetchAll();
+              }
+            }}>
               {t('setup.restartNow', 'Restart now')}
             </Button>
           </div>

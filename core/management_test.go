@@ -303,6 +303,37 @@ func TestMgmt_ProjectPatch(t *testing.T) {
 	}
 }
 
+func TestMgmt_ProjectPatch_Rename(t *testing.T) {
+	mgmt, ts, _ := testManagementServer(t, "tok")
+	var savedName string
+	var patch ProjectSettingsUpdate
+	mgmt.SetSaveProjectSettings(func(name string, update ProjectSettingsUpdate) error {
+		savedName = name
+		patch = update
+		return nil
+	})
+
+	r := mgmtPatch(t, ts.URL+"/api/v1/projects/test-project", "tok", map[string]any{
+		"name": "renamed-project",
+	})
+	if !r.OK {
+		t.Fatalf("rename patch failed: %s", r.Error)
+	}
+	var data map[string]any
+	if err := json.Unmarshal(r.Data, &data); err != nil {
+		t.Fatalf("unmarshal rename response: %v", err)
+	}
+	if data["restart_required"] != true {
+		t.Fatalf("restart_required = %v, want true", data["restart_required"])
+	}
+	if savedName != "test-project" {
+		t.Fatalf("savedName = %q, want test-project", savedName)
+	}
+	if patch.NewName == nil || *patch.NewName != "renamed-project" {
+		t.Fatalf("NewName = %v, want renamed-project", patch.NewName)
+	}
+}
+
 func TestMgmt_Sessions(t *testing.T) {
 	_, ts, e := testManagementServer(t, "tok")
 
@@ -991,7 +1022,7 @@ func TestMgmt_Agents(t *testing.T) {
 		t.Fatalf("agents failed: %s", r.Error)
 	}
 	var data struct {
-		Agents    []struct {
+		Agents []struct {
 			Name  string               `json:"name"`
 			Modes []PermissionModeInfo `json:"modes"`
 		} `json:"agents"`

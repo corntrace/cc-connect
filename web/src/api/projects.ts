@@ -43,6 +43,7 @@ export interface ProjectDetail {
 }
 
 export interface ProjectSettingsUpdate {
+  name?: string;
   language?: string;
   admin_from?: string;
   disabled_commands?: string[];
@@ -71,8 +72,8 @@ export interface AgentTypeInfo {
 export const listAgentTypes = () => api.get<{ agents: AgentTypeInfo[]; platforms: string[] }>('/agents');
 
 export const listProjects = () => api.get<{ projects: ProjectSummary[] }>('/projects');
-export const getProject = (name: string) => api.get<ProjectDetail>(`/projects/${name}`);
-export const updateProject = (name: string, body: ProjectSettingsUpdate) => api.patch(`/projects/${name}`, body);
+export const getProject = (name: string) => api.get<ProjectDetail>(`/projects/${encodeURIComponent(name)}`);
+export const updateProject = (name: string, body: ProjectSettingsUpdate) => api.patch(`/projects/${encodeURIComponent(name)}`, body);
 
 export const addPlatformToProject = (projectName: string, body: {
   type: string; options: Record<string, any>; work_dir?: string; agent_type?: string;
