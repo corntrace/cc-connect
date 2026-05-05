@@ -268,6 +268,13 @@
     "appSecret": "App Secret",
     "enableFeishuCard": "启用飞书卡片",
     "enableFeishuCardHint": "关闭后使用纯文本回复",
+    "progressStyle": "过程消息样式",
+    "progressStyleHint": "legacy 为普通消息；card 会把 thinking/tool 过程合并为可更新卡片",
+    "progressStyleLegacy": "普通消息",
+    "progressStyleCompact": "紧凑消息",
+    "progressStyleCard": "进度卡片",
+    "reactionEmoji": "处理中表情",
+    "reactionEmojiHint": "飞书表情名称，例如 GoGoGo",
     "sandboxMode": "沙箱模式",
     "channelSecret": "Channel Secret",
     "channelToken": "Channel Access Token"

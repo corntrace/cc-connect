@@ -268,6 +268,13 @@
     "appSecret": "アプリシークレット",
     "enableFeishuCard": "Feishu カードを有効化",
     "enableFeishuCardHint": "無効にするとプレーンテキストで返信します",
+    "progressStyle": "進行状況スタイル",
+    "progressStyleHint": "legacy は通常メッセージ、card は thinking/tool の進行状況を更新可能なカードにまとめます",
+    "progressStyleLegacy": "通常メッセージ",
+    "progressStyleCompact": "コンパクトメッセージ",
+    "progressStyleCard": "進行状況カード",
+    "reactionEmoji": "処理中絵文字",
+    "reactionEmojiHint": "Feishu 絵文字名。例: GoGoGo",
     "sandboxMode": "サンドボックスモード",
     "channelSecret": "チャンネルシークレット",
     "channelToken": "チャンネルアクセストークン"

@@ -47,11 +47,17 @@ export default function PlatformManualForm({ platformType, projectName, workDir,
     setSaving(true);
     setError('');
     try {
-      const opts: Record<string, any> = {};
+      const opts: Record<string, any> = mode === 'edit' ? { ...(initialValues || {}) } : {};
       for (const f of meta.fields) {
         const v = values[f.key];
-        if (v !== undefined && v !== '' && v !== false) {
+        if (f.type === 'boolean') {
+          if (v !== undefined) opts[f.key] = !!v;
+          continue;
+        }
+        if (v !== undefined && v !== '') {
           opts[f.key] = v;
+        } else if (f.type !== 'password') {
+          delete opts[f.key];
         }
       }
       if (mode === 'edit') {
@@ -126,6 +132,27 @@ function FieldInput({ field, value, onChange, t }: { field: FieldDef; value: any
         <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
         {hint && <span className="text-[11px] text-gray-400">{hint}</span>}
       </label>
+    );
+  }
+
+  if (field.type === 'select') {
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+          {label} {field.required && <span className="text-red-400">*</span>}
+        </label>
+        <select
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent/50"
+        >
+          <option value="">{t('settings.default')}</option>
+          {field.options?.map(opt => (
+            <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
+          ))}
+        </select>
+        {hint && <p className="text-[11px] text-gray-400 mt-1">{hint}</p>}
+      </div>
     );
   }
 

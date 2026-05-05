@@ -176,6 +176,12 @@ type ProgressCardPayloadSupport interface {
 	SupportsProgressCardPayload() bool
 }
 
+// BotDisplayNameProvider is an optional interface for platforms that can expose
+// the messaging app/bot display name for UI labels.
+type BotDisplayNameProvider interface {
+	BotDisplayName() string
+}
+
 // ButtonOption represents a clickable inline button.
 type ButtonOption struct {
 	Text string // display text on the button

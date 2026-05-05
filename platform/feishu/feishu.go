@@ -140,6 +140,7 @@ type Platform struct {
 	cancel           context.CancelFunc
 	dedup            core.MessageDedup
 	botOpenID        string
+	botDisplayName   string
 	userNameCache    sync.Map // open_id -> display name
 	chatNameCache    sync.Map // chat_id -> chat name
 	chatMemberCache  sync.Map // chatID -> *chatMemberEntry
@@ -282,6 +283,8 @@ func (p *Platform) ProgressStyle() string { return p.progressStyle }
 
 func (p *Platform) SupportsProgressCardPayload() bool { return true }
 
+func (p *Platform) BotDisplayName() string { return strings.TrimSpace(p.botDisplayName) }
+
 func (p *Platform) tag() string { return p.platformName }
 
 func (p *Platform) dispatchPlatform() core.Platform {
@@ -304,11 +307,12 @@ func (p *Platform) Start(handler core.MessageHandler) error {
 	// can still receive events and operate correctly. We therefore only attempt
 	// bot open_id discovery eagerly for WebSocket mode.
 	if !p.shouldUseWebhookMode() {
-		if openID, err := p.fetchBotOpenID(); err != nil {
+		if info, err := p.fetchBotInfo(); err != nil {
 			slog.Warn(p.platformName+": failed to get bot open_id, group chat filtering disabled", "error", err)
 		} else {
-			p.botOpenID = openID
-			slog.Info(p.platformName+": bot identified", "open_id", openID)
+			p.botOpenID = info.OpenID
+			p.botDisplayName = info.DisplayName
+			slog.Info(p.platformName+": bot identified", "open_id", info.OpenID, "name", info.DisplayName)
 		}
 	}
 
@@ -377,7 +381,7 @@ func (p *Platform) Start(handler core.MessageHandler) error {
 		})
 
 	if p.useInteractiveCard {
-		slog.Info(p.platformName+": interactive card mode enabled, ensure card.action.trigger event is subscribed in Feishu console")
+		slog.Info(p.platformName + ": interactive card mode enabled, ensure card.action.trigger event is subscribed in Feishu console")
 	}
 
 	if p.shouldUseWebhookMode() {
@@ -2423,26 +2427,41 @@ func findSingleAsterisk(s string) int {
 	return -1
 }
 
-// fetchBotOpenID retrieves the bot's open_id via the Feishu bot info API.
-func (p *Platform) fetchBotOpenID() (string, error) {
+type botInfo struct {
+	OpenID      string
+	DisplayName string
+}
+
+// fetchBotInfo retrieves the bot's open_id and display name via the Feishu bot info API.
+func (p *Platform) fetchBotInfo() (botInfo, error) {
 	resp, err := p.client.Get(context.Background(),
 		"/open-apis/bot/v3/info", nil, larkcore.AccessTokenTypeTenant)
 	if err != nil {
-		return "", fmt.Errorf("api call: %w", err)
+		return botInfo{}, fmt.Errorf("api call: %w", err)
 	}
 	var result struct {
 		Code int `json:"code"`
 		Bot  struct {
-			OpenID string `json:"open_id"`
+			OpenID      string `json:"open_id"`
+			AppName     string `json:"app_name"`
+			Name        string `json:"name"`
+			DisplayName string `json:"display_name"`
 		} `json:"bot"`
 	}
 	if err := json.Unmarshal(resp.RawBody, &result); err != nil {
-		return "", fmt.Errorf("parse response: %w", err)
+		return botInfo{}, fmt.Errorf("parse response: %w", err)
 	}
 	if result.Code != 0 {
-		return "", fmt.Errorf("api code=%d", result.Code)
+		return botInfo{}, fmt.Errorf("api code=%d", result.Code)
 	}
-	return result.Bot.OpenID, nil
+	name := strings.TrimSpace(result.Bot.DisplayName)
+	if name == "" {
+		name = strings.TrimSpace(result.Bot.AppName)
+	}
+	if name == "" {
+		name = strings.TrimSpace(result.Bot.Name)
+	}
+	return botInfo{OpenID: result.Bot.OpenID, DisplayName: name}, nil
 }
 
 func isBotMentioned(mentions []*larkim.MentionEvent, botOpenID string) bool {

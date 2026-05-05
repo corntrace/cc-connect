@@ -268,6 +268,13 @@
     "appSecret": "App Secret",
     "enableFeishuCard": "Enable Feishu cards",
     "enableFeishuCardHint": "Disable to use plain-text replies",
+    "progressStyle": "Progress style",
+    "progressStyleHint": "legacy sends normal messages; card merges thinking/tool progress into an updateable card",
+    "progressStyleLegacy": "Normal messages",
+    "progressStyleCompact": "Compact message",
+    "progressStyleCard": "Progress card",
+    "reactionEmoji": "Processing emoji",
+    "reactionEmojiHint": "Feishu emoji name, for example GoGoGo",
     "sandboxMode": "Sandbox mode",
     "channelSecret": "Channel Secret",
     "channelToken": "Channel Access Token"

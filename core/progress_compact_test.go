@@ -53,6 +53,7 @@ func (r progressHintReplyCtx) supportsProgressCardPayloadHint() bool { return r.
 type previewCapturePlatform struct {
 	started []string
 	updated []string
+	botName string
 }
 
 func (p *previewCapturePlatform) Name() string                             { return "bridge" }
@@ -60,6 +61,7 @@ func (p *previewCapturePlatform) Start(MessageHandler) error               { ret
 func (p *previewCapturePlatform) Reply(context.Context, any, string) error { return nil }
 func (p *previewCapturePlatform) Send(context.Context, any, string) error  { return nil }
 func (p *previewCapturePlatform) Stop() error                              { return nil }
+func (p *previewCapturePlatform) BotDisplayName() string                   { return p.botName }
 
 func (p *previewCapturePlatform) SendPreviewStart(_ context.Context, _ any, content string) (any, error) {
 	p.started = append(p.started, content)
@@ -142,6 +144,27 @@ func TestCompactProgressWriter_UsesReplyContextHints(t *testing.T) {
 	}
 	if parsed.State != ProgressCardStateCompleted {
 		t.Fatalf("state = %q, want %q", parsed.State, ProgressCardStateCompleted)
+	}
+}
+
+func TestCompactProgressWriter_UsesPlatformBotDisplayName(t *testing.T) {
+	p := &previewCapturePlatform{botName: "Onit"}
+	replyCtx := progressHintReplyCtx{
+		style:   progressStyleCard,
+		payload: true,
+	}
+
+	w := newCompactProgressWriter(context.Background(), p, replyCtx, "codex", LangChinese, nil)
+	if !w.AppendEvent(ProgressEntryThinking, "planning", "", "planning") {
+		t.Fatal("AppendEvent() = false, want true")
+	}
+
+	payload, ok := ParseProgressCardPayload(p.started[0])
+	if !ok {
+		t.Fatalf("ParseProgressCardPayload(%q) failed", p.started[0])
+	}
+	if payload.Agent != "Onit" {
+		t.Fatalf("payload.Agent = %q, want Onit", payload.Agent)
 	}
 }
 

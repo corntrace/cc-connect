@@ -928,6 +928,13 @@ func TestBuildPreviewCardJSON_ProgressPayloadUsesStructuredCard(t *testing.T) {
 	}
 }
 
+func TestBotDisplayNameTrimsStoredName(t *testing.T) {
+	p := &Platform{botDisplayName: "  Onit  "}
+	if got := p.BotDisplayName(); got != "Onit" {
+		t.Fatalf("BotDisplayName() = %q, want Onit", got)
+	}
+}
+
 func TestBuildPreviewCardJSON_NormalTextFallback(t *testing.T) {
 	cardJSON := buildPreviewCardJSON("plain progress text")
 	if strings.Contains(cardJSON, "cc-connect · 进度") {
@@ -1026,8 +1033,8 @@ func TestAllowChat_FiltersGroupMessages(t *testing.T) {
 			p, err := newPlatform("feishu", lark.FeishuBaseUrl, map[string]any{
 				"app_id": "cli_xxx", "app_secret": "secret",
 				"enable_feishu_card": true,
-				"group_reply_all":   true,
-				"allow_chat":        tt.allowChat,
+				"group_reply_all":    true,
+				"allow_chat":         tt.allowChat,
 			})
 			if err != nil {
 				t.Fatalf("newPlatform() error = %v", err)

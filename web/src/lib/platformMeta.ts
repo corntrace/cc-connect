@@ -2,7 +2,8 @@ export interface FieldDef {
   key: string;
   labelKey: string;
   required?: boolean;
-  type?: 'text' | 'password' | 'number' | 'boolean';
+  type?: 'text' | 'password' | 'number' | 'boolean' | 'select';
+  options?: { value: string; labelKey: string }[];
   placeholder?: string;
   hintKey?: string;
   group?: 'basic' | 'advanced';
@@ -21,6 +22,12 @@ export const platformMeta: Record<string, PlatformMeta> = {
       { key: 'app_secret', labelKey: 'fields.appSecret', required: true, type: 'password' },
       { key: 'allow_chat', labelKey: 'fields.allowChat', placeholder: 'oc_xxx', group: 'advanced', hintKey: 'fields.allowChatHintFeishu' },
       { key: 'allow_from', labelKey: 'fields.allowFrom', placeholder: '* (all)', group: 'advanced' },
+      { key: 'progress_style', labelKey: 'fields.progressStyle', type: 'select', group: 'advanced', hintKey: 'fields.progressStyleHint', options: [
+        { value: 'legacy', labelKey: 'fields.progressStyleLegacy' },
+        { value: 'compact', labelKey: 'fields.progressStyleCompact' },
+        { value: 'card', labelKey: 'fields.progressStyleCard' },
+      ] },
+      { key: 'reaction_emoji', labelKey: 'fields.reactionEmoji', placeholder: 'GoGoGo', group: 'advanced', hintKey: 'fields.reactionEmojiHint' },
       { key: 'group_reply_all', labelKey: 'fields.groupReplyAll', type: 'boolean', group: 'advanced', hintKey: 'fields.groupReplyAllHintFeishu' },
       { key: 'share_session_in_channel', labelKey: 'fields.sharedGroupSession', type: 'boolean', group: 'advanced', hintKey: 'fields.sharedGroupSessionHintFeishu' },
       { key: 'thread_isolation', labelKey: 'fields.threadIsolation', type: 'boolean', group: 'advanced', hintKey: 'fields.threadIsolationHintFeishu' },
@@ -33,6 +40,12 @@ export const platformMeta: Record<string, PlatformMeta> = {
       { key: 'app_secret', labelKey: 'fields.appSecret', required: true, type: 'password' },
       { key: 'allow_chat', labelKey: 'fields.allowChat', placeholder: 'oc_xxx', group: 'advanced', hintKey: 'fields.allowChatHintFeishu' },
       { key: 'allow_from', labelKey: 'fields.allowFrom', placeholder: '* (all)', group: 'advanced' },
+      { key: 'progress_style', labelKey: 'fields.progressStyle', type: 'select', group: 'advanced', hintKey: 'fields.progressStyleHint', options: [
+        { value: 'legacy', labelKey: 'fields.progressStyleLegacy' },
+        { value: 'compact', labelKey: 'fields.progressStyleCompact' },
+        { value: 'card', labelKey: 'fields.progressStyleCard' },
+      ] },
+      { key: 'reaction_emoji', labelKey: 'fields.reactionEmoji', placeholder: 'GoGoGo', group: 'advanced', hintKey: 'fields.reactionEmojiHint' },
       { key: 'group_reply_all', labelKey: 'fields.groupReplyAll', type: 'boolean', group: 'advanced', hintKey: 'fields.groupReplyAllHintFeishu' },
       { key: 'share_session_in_channel', labelKey: 'fields.sharedGroupSession', type: 'boolean', group: 'advanced', hintKey: 'fields.sharedGroupSessionHintFeishu' },
       { key: 'thread_isolation', labelKey: 'fields.threadIsolation', type: 'boolean', group: 'advanced', hintKey: 'fields.threadIsolationHintFeishu' },

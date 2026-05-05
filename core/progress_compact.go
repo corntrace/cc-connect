@@ -289,6 +289,12 @@ func SuppressStandaloneToolResultEvent(p Platform) bool {
 }
 
 func newCompactProgressWriter(ctx context.Context, p Platform, replyCtx any, agentName string, lang Language, transform func(string) string) *compactProgressWriter {
+	displayName := normalizeProgressAgentLabel(agentName)
+	if bp, ok := p.(BotDisplayNameProvider); ok {
+		if botName := strings.TrimSpace(bp.BotDisplayName()); botName != "" {
+			displayName = botName
+		}
+	}
 	w := &compactProgressWriter{
 		ctx:        ctx,
 		platform:   p,
@@ -296,7 +302,7 @@ func newCompactProgressWriter(ctx context.Context, p Platform, replyCtx any, age
 		transform:  transform,
 		style:      progressStyleForTarget(p, replyCtx),
 		state:      ProgressCardStateRunning,
-		agentName:  normalizeProgressAgentLabel(agentName),
+		agentName:  displayName,
 		lang:       lang,
 		maxEntries: 10,
 	}
