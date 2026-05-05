@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 const LOG_LEVELS = ['debug', 'info', 'warn', 'error'];
 const ATTACHMENT_OPTS = ['', 'on', 'off'];
 const LANGUAGES = ['en', 'zh', 'zh-TW', 'ja', 'es'];
+const CARD_MODES = ['legacy', 'rich'];
 
 function Toggle({ value, onChange, label, hint }: { value: boolean; onChange: (v: boolean) => void; label: string; hint?: string }) {
   return (
@@ -79,6 +80,7 @@ export default function GlobalSettings() {
   const [thinkingMaxLen, setThinkingMaxLen] = useState(300);
   const [toolMessages, setToolMessages] = useState(true);
   const [toolMaxLen, setToolMaxLen] = useState(500);
+  const [cardMode, setCardMode] = useState<'legacy' | 'rich'>('legacy');
   const [spEnabled, setSpEnabled] = useState(true);
   const [spInterval, setSpInterval] = useState(1500);
   const [rlMax, setRlMax] = useState(20);
@@ -96,6 +98,7 @@ export default function GlobalSettings() {
       setThinkingMaxLen(s.thinking_max_len ?? 300);
       setToolMessages(s.tool_messages ?? true);
       setToolMaxLen(s.tool_max_len ?? 500);
+      setCardMode(s.card_mode === 'rich' ? 'rich' : 'legacy');
       setSpEnabled(s.stream_preview_enabled ?? true);
       setSpInterval(s.stream_preview_interval_ms ?? 1500);
       setRlMax(s.rate_limit_max_messages ?? 20);
@@ -122,6 +125,7 @@ export default function GlobalSettings() {
         thinking_max_len: thinkingMaxLen,
         tool_messages: toolMessages,
         tool_max_len: toolMaxLen,
+        card_mode: cardMode,
         stream_preview_enabled: spEnabled,
         stream_preview_interval_ms: spInterval,
         rate_limit_max_messages: rlMax,
@@ -204,6 +208,16 @@ export default function GlobalSettings() {
             onChange={setToolMaxLen}
             min={0}
             hint={t('settings.toolMaxLenHint', 'Max characters for tool use messages; 0 = no truncation')}
+          />
+          <Select
+            label={t('settings.cardMode', 'Card rendering mode')}
+            value={cardMode}
+            onChange={(v) => setCardMode(v === 'rich' ? 'rich' : 'legacy')}
+            hint={t('settings.cardModeHint', 'Controls the global display.card_mode setting; rich enables Feishu Card 2.0 single-card turns')}
+            options={CARD_MODES.map((v) => ({
+              value: v,
+              label: t(`settings.cardMode${v === 'rich' ? 'Rich' : 'Legacy'}`, v),
+            }))}
           />
         </div>
       </Card>

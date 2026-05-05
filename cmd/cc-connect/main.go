@@ -943,6 +943,9 @@ func main() {
 				iv := int(v)
 				u.ToolMaxLen = &iv
 			}
+			if v, ok := updates["card_mode"].(string); ok {
+				u.CardMode = &v
+			}
 			if v, ok := updates["stream_preview_enabled"].(bool); ok {
 				u.StreamPreviewOn = &v
 			}

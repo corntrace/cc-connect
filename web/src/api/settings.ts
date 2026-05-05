@@ -9,6 +9,7 @@ export interface GlobalSettings {
   thinking_max_len: number;
   tool_messages: boolean;
   tool_max_len: number;
+  card_mode: 'legacy' | 'rich';
   stream_preview_enabled: boolean;
   stream_preview_interval_ms: number;
   rate_limit_max_messages: number;

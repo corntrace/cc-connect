@@ -3286,6 +3286,7 @@ func GetGlobalSettings() map[string]any {
 	} else {
 		result["tool_max_len"] = 500
 	}
+	result["card_mode"] = EffectiveCardMode(cfg, nil)
 	// Stream preview
 	spEnabled := true
 	if cfg.StreamPreview.Enabled != nil {
@@ -3327,6 +3328,7 @@ type GlobalSettingsUpdate struct {
 	ThinkingMaxLen     *int    `json:"thinking_max_len"`
 	ToolMessages       *bool   `json:"tool_messages"`
 	ToolMaxLen         *int    `json:"tool_max_len"`
+	CardMode           *string `json:"card_mode"`
 	StreamPreviewOn    *bool   `json:"stream_preview_enabled"`
 	StreamPreviewIntMs *int    `json:"stream_preview_interval_ms"`
 	RateLimitMax       *int    `json:"rate_limit_max_messages"`
@@ -3372,6 +3374,15 @@ func SaveGlobalSettings(u GlobalSettingsUpdate) error {
 	}
 	if u.ToolMaxLen != nil {
 		cfg.Display.ToolMaxLen = u.ToolMaxLen
+	}
+	if u.CardMode != nil {
+		mode := strings.ToLower(strings.TrimSpace(*u.CardMode))
+		switch mode {
+		case "legacy", "rich":
+			cfg.Display.CardMode = &mode
+		default:
+			return fmt.Errorf("config: display.card_mode must be \"legacy\" or \"rich\"")
+		}
 	}
 	if u.StreamPreviewOn != nil {
 		cfg.StreamPreview.Enabled = u.StreamPreviewOn

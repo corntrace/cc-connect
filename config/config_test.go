@@ -1685,6 +1685,48 @@ func readTestConfig(t *testing.T) Config {
 	return cfg
 }
 
+func TestGetGlobalSettingsIncludesCardMode(t *testing.T) {
+	rich := "rich"
+	writeTestConfig(t, `
+[display]
+card_mode = "rich"
+`)
+
+	got := GetGlobalSettings()
+	if got["card_mode"] != rich {
+		t.Fatalf("card_mode = %v, want %q", got["card_mode"], rich)
+	}
+}
+
+func TestSaveGlobalSettingsUpdatesCardMode(t *testing.T) {
+	writeTestConfig(t, `
+[display]
+card_mode = "legacy"
+`)
+
+	rich := "rich"
+	if err := SaveGlobalSettings(GlobalSettingsUpdate{CardMode: &rich}); err != nil {
+		t.Fatalf("SaveGlobalSettings returned error: %v", err)
+	}
+
+	cfg := readTestConfig(t)
+	if cfg.Display.CardMode == nil || *cfg.Display.CardMode != "rich" {
+		t.Fatalf("card_mode = %v, want rich", cfg.Display.CardMode)
+	}
+}
+
+func TestSaveGlobalSettingsRejectsInvalidCardMode(t *testing.T) {
+	writeTestConfig(t, `
+[display]
+card_mode = "legacy"
+`)
+
+	bad := "cards"
+	if err := SaveGlobalSettings(GlobalSettingsUpdate{CardMode: &bad}); err == nil {
+		t.Fatal("SaveGlobalSettings error = nil, want invalid card_mode error")
+	}
+}
+
 func TestLoadRelayTimeoutConfig(t *testing.T) {
 	configPath := writeConfigFixture(t, relayConfigFixture)
 
