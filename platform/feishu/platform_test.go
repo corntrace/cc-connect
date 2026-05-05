@@ -935,6 +935,33 @@ func TestBotDisplayNameTrimsStoredName(t *testing.T) {
 	}
 }
 
+func TestBuildRichCard_RendersThinkingAndToolResultRows(t *testing.T) {
+	code := 0
+	success := true
+	cardJSON := buildRichCard(core.CardStatusWorking, "", []core.ToolStep{
+		{Kind: core.ToolStepKindThinking, Name: "Thinking", Summary: "Inspecting event routing"},
+		{
+			Kind:     core.ToolStepKindTool,
+			Name:     "Bash",
+			Summary:  "echo hi",
+			Result:   "hi",
+			Status:   "completed",
+			ExitCode: &code,
+			Success:  &success,
+			Done:     true,
+		},
+	}, "done", true, time.Second)
+
+	for _, want := range []string{"Inspecting event routing", "echo hi", "completed", "exit: 0", "hi"} {
+		if !strings.Contains(cardJSON, want) {
+			t.Fatalf("rich card should contain %q, got %q", want, cardJSON)
+		}
+	}
+	if strings.Contains(cardJSON, core.ProgressCardPayloadPrefix) {
+		t.Fatalf("rich card should not contain progress payload prefix, got %q", cardJSON)
+	}
+}
+
 func TestBuildPreviewCardJSON_NormalTextFallback(t *testing.T) {
 	cardJSON := buildPreviewCardJSON("plain progress text")
 	if strings.Contains(cardJSON, "cc-connect · 进度") {
