@@ -161,6 +161,7 @@
   "system": {
     "title": "Sistema",
     "config": "Configuración",
+    "changelog": "Registro de cambios",
     "logs": "Registros",
     "restart": "Reiniciar",
     "reload": "Recargar configuración",

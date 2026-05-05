@@ -161,6 +161,7 @@
   "system": {
     "title": "系統",
     "config": "設定",
+    "changelog": "更新日誌",
     "logs": "記錄",
     "restart": "重新啟動",
     "reload": "重新載入設定",

@@ -143,6 +143,41 @@ All user-facing strings must go through `core/i18n.go`:
 - Keep functions focused; extract helpers when a function exceeds ~80 lines
 - Naming: `New()` for constructors, `Get/Set` for accessors, avoid stuttering (`feishu.FeishuPlatform` → `feishu.Platform`)
 
+## Local Versioning
+
+Local releases are named from the upstream release tag they are based on, plus
+a local patch suffix:
+
+```text
+v<upstream-version>.patch.<n>
+```
+
+Examples:
+
+```text
+upstream tag: v1.3.3-beta.1
+local patch: v1.3.3-beta.1.patch.1
+next patch:  v1.3.3-beta.1.patch.2
+```
+
+When upstream advances, reset the patch sequence from the new upstream base:
+
+```text
+upstream tag: v1.3.3-beta.2
+local patch: v1.3.3-beta.2.patch.1
+```
+
+Builds should inject this version into the binary with the existing Makefile
+`VERSION` variable or equivalent `-ldflags`, so Web Admin, `cc-connect --version`,
+and `/version` all report the same value:
+
+```bash
+make build VERSION=v1.3.3-beta.1.patch.1
+```
+
+For local release points, create a git tag with the same version string after
+the release commit is created.
+
 ## Testing
 
 ### Requirements

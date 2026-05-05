@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.3.3-beta.1.patch.1 (2026-05-05)
+
+本次维护版本同步了 `upstream/main` 的近期更新，同时补充飞书进度卡片、Web 管理配置能力，以及多个平台和 Agent 的稳定性修复。没有破坏性变更。
+
+### 新增功能
+- **飞书富文本进度卡片**：使用 Card 2.0 渲染 Codex 进度，支持 thinking、工具调用、结果行、状态色标题、可折叠进度区域、耗时页脚，以及大卡片降级保护 (#838)。
+- **飞书进度卡片机器人名称**：进度卡片标题优先使用飞书/Lark 机器人显示名，而不是 Agent 类型，因此可以显示为 `智能助手 · 进行中`，不再固定为 `Codex · 进行中`。
+- **Web 修改项目名称**：现在可以在 Web 管理页面修改项目名称，并写回 `config.toml`，保存后提示需要重启生效。
+- **Web 飞书/Lark 平台选项**：Web 管理页面可以配置飞书/Lark 的 `progress_style` 和 `reaction_emoji`，编辑平台时会保留已有的隐藏配置项。
+- **Slack Assistant API**：新增 Slack Assistant API 支持，并提供 Agent 开关 (#844)。
+- **MAX 平台**：新增 MAX Messenger 的 webhook 投递模式和部署文档 (#818)。
+- **钉钉富文本与图片**：新增钉钉 `richText` 支持和图片消息处理 (#719, #828)。
+- **显示模式配置**：新增枚举型 `display.mode`，替代旧的布尔静默配置，并支持项目级 `[projects.display]` 覆盖 (#655, #792)。
+- **Shell 命令进度**：长时间运行的 Shell 命令现在会持续输出进度 (#759)。
+- **Claude Code 项目环境变量**：支持项目级环境变量，并将 `cli_path` 等选项传递给工作区 Agent (#811, #812)。
+- **Codex 自定义 CLI 路径**：支持通过 `cli_path` 配置自定义 Codex CLI 可执行文件 (#545, #679)。
+
+### 修复
+- **飞书撤回消息**：处理消息撤回事件，避免已撤回消息继续进入 Agent 会话 (#841)。
+- **飞书话题线程**：在线程隔离的话题中跳过引用注入 (#767)。
+- **飞书媒体下载失败提示**：媒体下载失败时会通知用户，不再静默丢弃附件 (#815)。
+- **飞书机器人发送者标签**：按 `app_id` 标记机器人发送者，并支持配置别名 (#728)。
+- **Codex app-server 后端**：修复模型、reasoning effort、provider 配置、审批、空闲完成、stdio sentinel 等处理 (#787, #837)。
+- **Kimi 会话追踪**：从 stderr 捕获会话 UUID，避免 stdout 解析不稳定 (#766)。
+- **微信投递可靠性**：未完整投递时通知用户，增强重试日志，并将视频文件作为视频消息发送 (#771, #813)。
+- **Telegram 稳定性**：保留私有话题会话键，原生处理 `/start`，并提高 long-poll HTTP 超时时间 (#798, #804, #743)。
+- **核心会话路由**：队列消息出队时重置回复上下文，`/skills` 和自定义命令走工作区 Agent，无运行任务时拒绝 `/ps` (#730, #791, #793)。
+- **Compaction 续跑**：处理 `compaction_continue`，避免引擎提前退出 (#746)。
+- **Daemon 重启**：新增 `--force` 支持，并改进 Windows daemon 安装 (#736, #817)。
+- **空项目配置**：没有配置项目时给出友好错误并退出 (#755)。
+
+### 文档与维护
+- **Cron 文档**：在系统提示和模板中暴露 `cron edit` 给 Agent 使用 (#769)。
+- **Sponsors**：刷新 sponsor 列表、推荐链接和素材。
+- **环境说明**：在 `AGENTS.md` 中记录本地/远端开发环境约定。
+- **测试**：稳定 Codex 和 management 测试，新增飞书富卡片测试，并扩展机器人显示名和平台配置持久化覆盖 (#782)。
+
 ## v1.3.3-beta.1 (2026-04-25)
 
 Beta release with new agents, new features, and broad platform fixes. No breaking changes.

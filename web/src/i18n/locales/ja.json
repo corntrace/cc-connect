@@ -161,6 +161,7 @@
   "system": {
     "title": "システム",
     "config": "設定",
+    "changelog": "変更履歴",
     "logs": "ログ",
     "restart": "再起動",
     "reload": "設定の再読み込み",
