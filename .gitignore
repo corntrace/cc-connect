@@ -135,3 +135,7 @@ Desktop.ini
 *.pfx
 secrets/
 credentials/
+
+ENVIRONMENT.md
+.codex
+.claude/settings.local.json
